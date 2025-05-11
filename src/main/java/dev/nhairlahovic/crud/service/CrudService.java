@@ -30,18 +30,9 @@ public abstract class CrudService<T, ID> {
 
     protected final JpaFilterRepository<T, ID> repository;
 
-    protected static final String OPERATION_ALLOWED_MESSAGE = "Operation is allowed.";
-    protected static final String OPERATION_DENIED_MESSAGE = "Operation is not allowed.";
-
     public abstract String getResourceType();
 
     public abstract Optional<FilterCriteria> getFilterCriteria();
-
-    public abstract OperationCheck isCreatable(T resource);
-
-    public abstract OperationCheck isEditable(T resource);
-
-    public abstract OperationCheck isDeletable(T resource);
 
     public List<T> getAll() {
         return getAll(null);
@@ -73,7 +64,7 @@ public abstract class CrudService<T, ID> {
     public T create(T resource) {
         OperationCheck operation = isCreatable(resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.message());
+            throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.getMessage());
         }
 
         return repository.save(resource);
@@ -86,7 +77,7 @@ public abstract class CrudService<T, ID> {
 
         OperationCheck operation = isEditable(resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.message());
+            throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.getMessage());
         }
 
         return repository.save(resource);
@@ -97,14 +88,25 @@ public abstract class CrudService<T, ID> {
 
         OperationCheck operation = isDeletable(entity);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.message());
+            throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.getMessage());
         }
 
         repository.delete(entity);
+    }
+
+    protected OperationCheck isCreatable(T resource) {
+        return OperationCheck.permitted();
+    }
+
+    protected OperationCheck isEditable(T resource) {
+        return OperationCheck.permitted();
+    }
+
+    protected OperationCheck isDeletable(T resource) {
+        return OperationCheck.permitted();
     }
 
     public List<T> getByIdIn(List<ID> ids) {
         return repository.findAllById(ids);
     }
 }
-

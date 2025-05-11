@@ -25,9 +25,6 @@ public abstract class NestedCrudService<P, E, PI, ID> {
     protected final JpaRepository<E, ID> repository;
     protected final JpaRepository<P, PI> parentRepository;
 
-    protected static final String OPERATION_ALLOWED_MESSAGE = "Operation is allowed.";
-    protected static final String OPERATION_DENIED_MESSAGE = "Operation is not allowed.";
-
     public abstract String getResourceType();
 
     public abstract String getParentResourceType();
@@ -54,7 +51,7 @@ public abstract class NestedCrudService<P, E, PI, ID> {
     public E create(E resource) {
         OperationCheck operation = isCreatable(resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.message());
+            throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.getMessage());
         }
 
         return repository.save(resource);
@@ -67,7 +64,7 @@ public abstract class NestedCrudService<P, E, PI, ID> {
 
         OperationCheck operation = isEditable(id, resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.message());
+            throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.getMessage());
         }
 
         preserveSomeData(resource, existingResource);
@@ -81,22 +78,22 @@ public abstract class NestedCrudService<P, E, PI, ID> {
 
         OperationCheck operation = isDeletable(entity);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.message());
+            throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.getMessage());
         }
 
         repository.delete(entity);
     }
 
     protected OperationCheck isCreatable(E resource) {
-        return new OperationCheck(true, OPERATION_ALLOWED_MESSAGE);
+        return OperationCheck.permitted();
     }
 
     protected OperationCheck isEditable(ID id, E resource) {
-        return new OperationCheck(true, OPERATION_ALLOWED_MESSAGE);
+        return OperationCheck.permitted();
     }
 
     protected OperationCheck isDeletable(E resource) {
-        return new OperationCheck(true, OPERATION_ALLOWED_MESSAGE);
+        return OperationCheck.permitted();
     }
 
     /**
@@ -116,4 +113,3 @@ public abstract class NestedCrudService<P, E, PI, ID> {
     protected void cleanSomeData(E existingResource) {
     }
 }
-
