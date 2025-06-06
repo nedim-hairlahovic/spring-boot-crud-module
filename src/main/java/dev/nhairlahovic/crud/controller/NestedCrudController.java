@@ -3,6 +3,7 @@ package dev.nhairlahovic.crud.controller;
 import dev.nhairlahovic.crud.exception.ConflictingResourceOperationException;
 import dev.nhairlahovic.crud.exception.ResourceNotFoundException;
 import dev.nhairlahovic.crud.mapper.NestedResourceMapper;
+import dev.nhairlahovic.crud.model.BaseEntity;
 import dev.nhairlahovic.crud.service.NestedCrudService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ import java.util.List;
  * @param <I> The type of the ID of the related entity.
  */
 @RequiredArgsConstructor
-public abstract class NestedCrudController<P, E, R, D, PI, I> {
+public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI, I> {
 
     protected final NestedCrudService<P, E, PI, I> nestedCrudService;
     protected final NestedResourceMapper<E, R, D, PI, I> mapper;

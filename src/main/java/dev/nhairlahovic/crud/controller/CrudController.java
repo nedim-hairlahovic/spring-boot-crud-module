@@ -3,6 +3,7 @@ package dev.nhairlahovic.crud.controller;
 import dev.nhairlahovic.crud.exception.ConflictingResourceOperationException;
 import dev.nhairlahovic.crud.exception.ResourceNotFoundException;
 import dev.nhairlahovic.crud.mapper.ResourceMapper;
+import dev.nhairlahovic.crud.model.BaseEntity;
 import dev.nhairlahovic.crud.model.PageDto;
 import dev.nhairlahovic.crud.service.CrudService;
 import jakarta.validation.Valid;
@@ -28,7 +29,7 @@ import java.util.List;
  * @param <I> The type of the ID of the entity.
  */
 @RequiredArgsConstructor
-public abstract class CrudController<E, R, D, I> {
+public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
 
     protected final CrudService<E, I> crudService;
     protected final ResourceMapper<E, R, D, I> mapper;

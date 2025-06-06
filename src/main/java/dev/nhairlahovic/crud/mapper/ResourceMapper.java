@@ -1,5 +1,7 @@
 package dev.nhairlahovic.crud.mapper;
 
+import dev.nhairlahovic.crud.model.BaseEntity;
+
 /**
  * This interface defines the operations for mapping between entities and their respective
  * Data Transfer Objects (DTOs). It provides methods to map from an entity to its DTO,
@@ -12,7 +14,7 @@ package dev.nhairlahovic.crud.mapper;
  * @param <D> The type of the response DTO.
  * @param <I> The type of the identifier of the entity.
  */
-public interface ResourceMapper<E, R, D, I> {
+public interface ResourceMapper<E extends BaseEntity<I>, R, D, I> {
 
     /**
      * Maps an entity to its corresponding DTO.
@@ -37,6 +39,9 @@ public interface ResourceMapper<E, R, D, I> {
      * @param request The request DTO containing the data for the update.
      * @return The updated entity.
      */
-    E updateEntity(I id, R request);
+    default E updateEntity(I id, R request) {
+        E entity = mapToEntity(request);
+        entity.setId(id);
+        return entity;
+    }
 }
-

@@ -1,6 +1,7 @@
 package dev.nhairlahovic.crud.controller;
 
-import dev.nhairlahovic.crud.mapper.NestedResourceMapper;
+import dev.nhairlahovic.crud.mapper.CompositeKeyResourceMapper;
+import dev.nhairlahovic.crud.model.BaseCompositeKeyEntity;
 import dev.nhairlahovic.crud.service.NestedCrudService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +27,10 @@ import java.util.List;
  * @param <C>  The type used for the composite key in the URL.
  */
 @RequiredArgsConstructor
-public abstract class NestedCompositeKeyCrudController<P, E, R, D, PI, I, C> {
+public abstract class NestedCompositeKeyCrudController<P, E extends BaseCompositeKeyEntity<I>, R, D, PI, I, C> {
 
     protected final NestedCrudService<P, E, PI, I> nestedCrudService;
-    protected final NestedResourceMapper<E, R, D, PI, I> mapper;
+    protected final CompositeKeyResourceMapper<E, R, D, PI, I> mapper;
 
     @GetMapping
     public List<D> getAllResources(@PathVariable PI parentId) {
@@ -56,7 +57,7 @@ public abstract class NestedCompositeKeyCrudController<P, E, R, D, PI, I, C> {
     @PutMapping("/{id}")
     public D updateResource(@PathVariable PI parentId, @PathVariable C id, @Valid @RequestBody R request) {
         I compositeId = convertToCompositeId(parentId, id);
-        E updatedEntity = mapper.updateEntity(compositeId, parentId, request);
+        E updatedEntity = mapper.updateEntity(parentId, request);
         E savedEntity = nestedCrudService.update(compositeId, updatedEntity);
         return mapper.mapToDto(savedEntity);
     }

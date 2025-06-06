@@ -1,9 +1,10 @@
 package dev.nhairlahovic.crud.mapper;
 
-import dev.nhairlahovic.crud.model.BaseEntity;
+import dev.nhairlahovic.crud.model.BaseCompositeKeyEntity;
 
 /**
- * A generic interface for mapping between entities and DTOs in the context of a nested (related) entity structure.
+ * A generic interface for mapping between entities and DTOs in the context of a nested (related) entity structure,
+ * where the entity typically uses a composite key consisting of a parent and child identifier.
  * This interface is designed to be implemented for specific use cases where an entity is related to a parent entity,
  * providing methods to map between request DTOs and entities, as well as entities and response DTOs.
  *
@@ -13,7 +14,7 @@ import dev.nhairlahovic.crud.model.BaseEntity;
  * @param <PI> The type of the identifier of the parent entity.
  * @param <I>  The type of the identifier of the entity.
  */
-public interface NestedResourceMapper<E extends BaseEntity<I>, R, D, PI, I> {
+public interface CompositeKeyResourceMapper<E extends BaseCompositeKeyEntity<I>, R, D, PI, I> {
 
     /**
      * Maps a request DTO to an entity, associating it with a parent entity.
@@ -35,14 +36,11 @@ public interface NestedResourceMapper<E extends BaseEntity<I>, R, D, PI, I> {
     /**
      * Updates an existing entity with data from the request DTO.
      *
-     * @param id       The ID of the entity being updated.
      * @param parentId The ID of the parent entity.
      * @param request  The request DTO containing the updated data.
      * @return The updated entity.
      */
-    default E updateEntity(I id, PI parentId, R request) {
-        var transfer = mapToEntity(parentId, request);
-        transfer.setId(id);
-        return transfer;
+    default E updateEntity(PI parentId, R request) {
+        return mapToEntity(parentId, request);
     }
 }
