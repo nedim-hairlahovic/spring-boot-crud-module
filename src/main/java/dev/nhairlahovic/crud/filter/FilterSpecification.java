@@ -83,7 +83,7 @@ public class FilterSpecification<T> implements Specification<T> {
             case EQUALITY -> builder.equal(expr, value);
             case LIKE -> builder.like(
                     builder.lower(expr),
-                    "%" + value + "%"
+                    "%" + value.toLowerCase() + "%"
             );
         };
     }
