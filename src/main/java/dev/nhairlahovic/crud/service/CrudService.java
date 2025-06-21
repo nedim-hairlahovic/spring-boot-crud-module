@@ -6,6 +6,7 @@ import dev.nhairlahovic.crud.filter.FilterCriteria;
 import dev.nhairlahovic.crud.filter.FilterSpecification;
 import dev.nhairlahovic.crud.model.OperationCheck;
 import dev.nhairlahovic.crud.repository.JpaFilterRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -83,6 +84,7 @@ public abstract class CrudService<T, ID> {
         return repository.save(resource);
     }
 
+    @Transactional
     public void delete(ID id) throws ConflictingResourceOperationException {
         T entity = this.getById(id);
 
@@ -91,7 +93,18 @@ public abstract class CrudService<T, ID> {
             throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.getMessage());
         }
 
+        beforeDelete(entity);
         repository.delete(entity);
+    }
+
+    /**
+     * Called before deleting the given entity.
+     * Subclasses can override to clean up related data or enforce business rules.
+     *
+     * @param entity the entity to be deleted
+     */
+    protected void beforeDelete(T entity) {
+        // default no-op
     }
 
     protected OperationCheck isCreatable(T resource) {

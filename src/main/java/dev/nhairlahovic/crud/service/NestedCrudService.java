@@ -73,6 +73,7 @@ public abstract class NestedCrudService<P, E, PI, ID> {
         return repository.save(resource);
     }
 
+    @Transactional
     public void delete(PI parentId, ID id) {
         E entity = this.getById(parentId, id);
 
@@ -81,7 +82,18 @@ public abstract class NestedCrudService<P, E, PI, ID> {
             throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.getMessage());
         }
 
+        beforeDelete(entity);
         repository.delete(entity);
+    }
+
+    /**
+     * Called before deleting the given entity.
+     * Subclasses can override to clean up related data or enforce business rules.
+     *
+     * @param entity the entity to be deleted
+     */
+    protected void beforeDelete(E entity) {
+        // default no-op
     }
 
     protected OperationCheck isCreatable(E resource) {
