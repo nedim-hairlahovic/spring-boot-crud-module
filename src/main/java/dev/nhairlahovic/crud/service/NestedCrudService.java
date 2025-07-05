@@ -54,7 +54,11 @@ public abstract class NestedCrudService<P, E, PI, ID> {
             throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.getMessage());
         }
 
-        return repository.save(resource);
+        E savedResource = repository.save(resource);
+
+        afterCreate(savedResource);
+
+        return savedResource;
     }
 
     @Transactional
@@ -67,10 +71,13 @@ public abstract class NestedCrudService<P, E, PI, ID> {
             throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.getMessage());
         }
 
-        preserveSomeData(resource, existingResource);
-        cleanSomeData(existingResource);
+        beforeUpdate(resource, existingResource);
 
-        return repository.save(resource);
+        E updatedResource = repository.save(resource);
+
+        afterUpdate(updatedResource);
+
+        return updatedResource;
     }
 
     @Transactional
@@ -86,16 +93,6 @@ public abstract class NestedCrudService<P, E, PI, ID> {
         repository.delete(entity);
     }
 
-    /**
-     * Called before deleting the given entity.
-     * Subclasses can override to clean up related data or enforce business rules.
-     *
-     * @param entity the entity to be deleted
-     */
-    protected void beforeDelete(E entity) {
-        // default no-op
-    }
-
     protected OperationCheck isCreatable(E resource) {
         return OperationCheck.permitted();
     }
@@ -109,19 +106,44 @@ public abstract class NestedCrudService<P, E, PI, ID> {
     }
 
     /**
-     * Preserves fields from the existing resource that should remain unchanged during the update.
+     * Called after a new entity is successfully created and saved.
+     * Subclasses can override this to perform related actions (e.g., updating related data).
      *
-     * @param resource the new resource with updates
-     * @param existingResource the current resource with data to preserve
+     * @param createdEntity the entity that was created
      */
-    protected void preserveSomeData(E resource, E existingResource) {
+    protected void afterCreate(E createdEntity) {
+        // default no-op
     }
 
     /**
-     * Removes outdated or unnecessary data from the existing resource before updating.
+     * Called before updating an entity.
+     * Subclasses can override to preserve data from the existing entity
+     * or clean up the new entity before saving.
      *
-     * @param existingResource the current resource to clean
+     * @param newResource      the new resource with updates
+     * @param existingResource the current resource loaded from the DB
      */
-    protected void cleanSomeData(E existingResource) {
+    protected void beforeUpdate(E newResource, E existingResource) {
+        // default no-op
+    }
+
+    /**
+     * Called after an existing entity is successfully updated and saved.
+     * Subclasses can override this to perform related actions (e.g., syncing relationships).
+     *
+     * @param updatedEntity the entity that was updated
+     */
+    protected void afterUpdate(E updatedEntity) {
+        // default no-op
+    }
+
+    /**
+     * Called before deleting the given entity.
+     * Subclasses can override to clean up related data or enforce business rules.
+     *
+     * @param entity the entity to be deleted
+     */
+    protected void beforeDelete(E entity) {
+        // default no-op
     }
 }

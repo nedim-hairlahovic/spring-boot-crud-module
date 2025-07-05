@@ -50,6 +50,9 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     public D createResource(@PathVariable("parentId") PI parentId, @Valid @RequestBody R request) {
         E resource = mapper.mapToEntity(parentId, request);
         E savedResource = nestedCrudService.create(resource);
+
+        afterCreate(parentId, savedResource, request);
+
         return mapper.mapToDto(savedResource);
     }
 
@@ -57,6 +60,9 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     public D updateResource(@PathVariable("parentId") PI parentId, @PathVariable("id") I id, @Valid @RequestBody R request) throws ResourceNotFoundException {
         E updatedResource = mapper.updateEntity(id, parentId, request);
         E savedResource = nestedCrudService.update(id, updatedResource);
+
+        afterUpdate(parentId, savedResource, request);
+
         return mapper.mapToDto(savedResource);
     }
 
@@ -64,5 +70,25 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     @DeleteMapping("/{id}")
     public void deleteResource(@PathVariable("parentId") PI parentId, @PathVariable("id") I id) throws ResourceNotFoundException, ConflictingResourceOperationException {
         nestedCrudService.delete(parentId, id);
+    }
+
+    /**
+     * Hook method called after an entity is created.
+     * Subclasses can override to perform controller-level post-processing.
+     *
+     * @param savedEntity the entity that was just saved
+     */
+    protected void afterCreate(PI parentId, E savedEntity, R request) {
+        // default no-op
+    }
+
+    /**
+     * Hook method called after an entity is updated.
+     * Subclasses can override to perform controller-level post-processing.
+     *
+     * @param savedEntity the entity that was just updated
+     */
+    protected void afterUpdate(PI parentId, E savedEntity, R request) {
+        // default no-op
     }
 }
