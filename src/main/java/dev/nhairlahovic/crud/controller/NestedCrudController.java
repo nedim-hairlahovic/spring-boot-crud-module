@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * This abstract class provides a generic CRUD (Create, Read, Update, Delete) controller
@@ -33,7 +35,9 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     protected final NestedResourceMapper<E, R, D, PI, I> mapper;
 
     @GetMapping
-    public List<D> getAllResourcesByParent(@PathVariable PI parentId) {
+    public List<D> getAllResourcesByParent(@PathVariable Map<String, String> pathVars) {
+        PI parentId = resolveParentId(pathVars);
+
         return nestedCrudService.getAllByParent(parentId)
                 .stream()
                 .map(mapper::mapToDto)
@@ -41,13 +45,18 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     }
 
     @GetMapping("/{id}")
-    public D getResourceById(@PathVariable("parentId") PI parentId, @PathVariable("id") I id) throws ResourceNotFoundException {
+    public D getResourceById(@PathVariable Map<String, String> pathVars) throws ResourceNotFoundException {
+        PI parentId = resolveParentId(pathVars);
+        I id = resolveChildId(pathVars);
+
         E resource = nestedCrudService.getById(parentId, id);
         return mapper.mapToDto(resource);
     }
 
     @PostMapping
-    public D createResource(@PathVariable("parentId") PI parentId, @Valid @RequestBody R request) {
+    public D createResource(@PathVariable Map<String, String> pathVars, @Valid @RequestBody R request) {
+        PI parentId = resolveParentId(pathVars);
+
         E resource = mapper.mapToEntity(parentId, request);
         E savedResource = nestedCrudService.create(resource);
 
@@ -57,7 +66,10 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     }
 
     @PutMapping("/{id}")
-    public D updateResource(@PathVariable("parentId") PI parentId, @PathVariable("id") I id, @Valid @RequestBody R request) throws ResourceNotFoundException {
+    public D updateResource(@PathVariable Map<String, String> pathVars, @Valid @RequestBody R request) throws ResourceNotFoundException {
+        PI parentId = resolveParentId(pathVars);
+        I id = resolveChildId(pathVars);
+
         E updatedResource = mapper.updateEntity(id, parentId, request);
         E savedResource = nestedCrudService.update(id, updatedResource);
 
@@ -68,7 +80,10 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{id}")
-    public void deleteResource(@PathVariable("parentId") PI parentId, @PathVariable("id") I id) throws ResourceNotFoundException, ConflictingResourceOperationException {
+    public void deleteResource(@PathVariable Map<String, String> pathVars) throws ResourceNotFoundException, ConflictingResourceOperationException {
+        PI parentId = resolveParentId(pathVars);
+        I id = resolveChildId(pathVars);
+
         nestedCrudService.delete(parentId, id);
     }
 
@@ -90,5 +105,48 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
      */
     protected void afterUpdate(PI parentId, E savedEntity, R request) {
         // default no-op
+    }
+
+    @SuppressWarnings("unchecked")
+    protected PI resolveParentId(Map<String, String> pathVars) {
+        PathParamInfo paramInfo = getParentIdPathParam();
+        String rawValue = pathVars.get(paramInfo.name());
+        return (PI) convertPathVariable(rawValue, paramInfo.type());
+    }
+
+    protected PathParamInfo getParentIdPathParam() {
+        return new PathParamInfo("parentId", Long.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected I resolveChildId(Map<String, String> pathVars) {
+        PathParamInfo paramInfo = getChildIdPathParam();
+        String rawValue = pathVars.get(paramInfo.name());
+        return (I) convertPathVariable(rawValue, paramInfo.type());
+    }
+
+    protected PathParamInfo getChildIdPathParam() {
+        return new PathParamInfo("id", Long.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <T> T convertPathVariable(String rawValue, Class<T> type) {
+        if (rawValue == null) {
+            throw new IllegalArgumentException("Missing path variable value for type: " + type.getSimpleName());
+        }
+
+        try {
+            Object result = switch (type.getSimpleName()) {
+                case "Long" -> Long.parseLong(rawValue);
+                case "Integer" -> Integer.parseInt(rawValue);
+                case "UUID" -> UUID.fromString(rawValue);
+                case "String" -> rawValue;
+                default -> throw new IllegalArgumentException("Unsupported path variable type: " + type.getName());
+            };
+            return (T) result;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Invalid path variable value: '%s' (expected type: %s)"
+                    .formatted(rawValue, type.getSimpleName()), ex);
+        }
     }
 }
