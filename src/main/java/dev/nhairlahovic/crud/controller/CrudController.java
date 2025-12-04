@@ -1,5 +1,7 @@
 package dev.nhairlahovic.crud.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import dev.nhairlahovic.crud.annotation.Patchable;
 import dev.nhairlahovic.crud.exception.ConflictingResourceOperationException;
 import dev.nhairlahovic.crud.exception.ResourceNotFoundException;
 import dev.nhairlahovic.crud.mapper.ResourceMapper;
@@ -14,8 +16,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This abstract class provides a generic CRUD (Create, Read, Update, Delete) controller.
@@ -73,5 +81,33 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
     @DeleteMapping("/{id}")
     public void deleteResource(@PathVariable("id") I id) throws ResourceNotFoundException, ConflictingResourceOperationException {
         crudService.delete(id);
+    }
+
+    @PatchMapping("/{id}")
+    public D patchResource(@PathVariable("id") I id, @RequestBody JsonNode request) throws ResourceNotFoundException {
+        Set<String> patchableFields = getPatchableFields();
+        if (patchableFields.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method PATCH is not supported for this resource.");
+        }
+
+        E resource = crudService.getById(id);
+        E patchedResource = mapper.patchEntity(resource, request, patchableFields);
+        E savedResource = crudService.update(id, patchedResource);
+        return mapper.mapToDto(savedResource);
+    }
+
+    protected Set<String> getPatchableFields() {
+        Class<R> requestClass = getRequestClass();
+
+        return Arrays.stream(requestClass.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Patchable.class))
+                .map(Field::getName)
+                .collect(Collectors.toSet());
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Class<R> getRequestClass() {
+        ParameterizedType type = (ParameterizedType) getClass().getGenericSuperclass();
+        return (Class<R>) type.getActualTypeArguments()[1]; // index 1 = R
     }
 }

@@ -1,6 +1,13 @@
 package dev.nhairlahovic.crud.mapper;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.nhairlahovic.crud.exception.PatchException;
 import dev.nhairlahovic.crud.model.BaseEntity;
+
+import java.lang.reflect.Field;
+import java.util.Set;
 
 /**
  * This interface defines the operations for mapping between entities and their respective
@@ -35,7 +42,7 @@ public interface ResourceMapper<E extends BaseEntity<I>, R, D, I> {
     /**
      * Updates an existing entity with data from a request DTO.
      *
-     * @param id The identifier of the entity to be updated.
+     * @param id      The identifier of the entity to be updated.
      * @param request The request DTO containing the data for the update.
      * @return The updated entity.
      */
@@ -43,5 +50,35 @@ public interface ResourceMapper<E extends BaseEntity<I>, R, D, I> {
         E entity = mapToEntity(request);
         entity.setId(id);
         return entity;
+    }
+
+    default E patchEntity(E resource, JsonNode request, Set<String> patchableFields) {
+        Class<?> clazz = resource.getClass();
+
+        for (String fieldName : patchableFields) {
+            if (!request.has(fieldName)) {
+                continue;
+            }
+
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+
+                JsonNode valueNode = request.get(fieldName);
+                if (valueNode.isNull()) {
+                    field.set(resource, null);
+                    continue;
+                }
+
+                Object convertedValue = new ObjectMapper().treeToValue(valueNode, field.getType());
+                field.set(resource, convertedValue);
+            } catch (JsonProcessingException ex) {
+                throw new PatchException("Invalid value for field '" + fieldName);
+            } catch (Exception ex) {
+                throw new PatchException("Failed to patch field '" + fieldName);
+            }
+        }
+
+        return resource;
     }
 }
