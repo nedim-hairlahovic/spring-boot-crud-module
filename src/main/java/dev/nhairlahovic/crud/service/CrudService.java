@@ -65,7 +65,7 @@ public abstract class CrudService<T, ID> {
     public T create(T resource) {
         OperationCheck operation = isCreatable(resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.getMessage());
+            throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
         return repository.save(resource);
@@ -78,7 +78,7 @@ public abstract class CrudService<T, ID> {
 
         OperationCheck operation = isEditable(resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.getMessage());
+            throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
         return repository.save(resource);
@@ -90,7 +90,7 @@ public abstract class CrudService<T, ID> {
 
         OperationCheck operation = isDeletable(entity);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.getMessage());
+            throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
         beforeDelete(entity);

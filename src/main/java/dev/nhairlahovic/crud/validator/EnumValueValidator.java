@@ -6,14 +6,14 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EnumValueValidator implements ConstraintValidator<EnumValueConstraint, String> {
+public class EnumValueValidator implements ConstraintValidator<EnumValue, String> {
 
     private List<String> enumValues;
     private String messageTemplate;
     private boolean allowBlank;
 
     @Override
-    public void initialize(EnumValueConstraint constraintAnnotation) {
+    public void initialize(EnumValue constraintAnnotation) {
         enumValues = new ArrayList<>();
         Class<? extends Enum<?>> enumClass = constraintAnnotation.enumClass();
 

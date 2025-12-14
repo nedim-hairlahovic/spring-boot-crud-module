@@ -51,7 +51,7 @@ public abstract class NestedCrudService<P, E, PI, ID> {
     public E create(E resource) {
         OperationCheck operation = isCreatable(resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to create resource. Reason: " + operation.getMessage());
+            throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
         E savedResource = repository.save(resource);
@@ -68,7 +68,7 @@ public abstract class NestedCrudService<P, E, PI, ID> {
 
         OperationCheck operation = isEditable(id, resource);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to edit resource. Reason: " + operation.getMessage());
+            throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
         beforeUpdate(resource, existingResource);
@@ -86,7 +86,7 @@ public abstract class NestedCrudService<P, E, PI, ID> {
 
         OperationCheck operation = isDeletable(entity);
         if (!operation.isAllowed()) {
-            throw new ConflictingResourceOperationException("Failed to delete resource. Reason: " + operation.getMessage());
+            throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
         beforeDelete(entity);
