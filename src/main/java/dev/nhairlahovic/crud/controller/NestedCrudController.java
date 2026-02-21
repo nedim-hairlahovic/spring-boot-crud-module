@@ -5,9 +5,10 @@ import dev.nhairlahovic.crud.exception.ResourceNotFoundException;
 import dev.nhairlahovic.crud.mapper.NestedResourceMapper;
 import dev.nhairlahovic.crud.model.BaseEntity;
 import dev.nhairlahovic.crud.service.NestedCrudService;
-import jakarta.validation.Valid;
+import dev.nhairlahovic.crud.validator.ValidationGroups;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,7 +55,7 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     }
 
     @PostMapping
-    public D createResource(@PathVariable Map<String, String> pathVars, @Valid @RequestBody R request) {
+    public D createResource(@PathVariable Map<String, String> pathVars, @Validated(ValidationGroups.All.class) @RequestBody R request) {
         PI parentId = resolveParentId(pathVars);
 
         E resource = mapper.mapToEntity(parentId, request);
@@ -66,7 +67,7 @@ public abstract class NestedCrudController<P, E extends BaseEntity<I>, R, D, PI,
     }
 
     @PutMapping("/{id}")
-    public D updateResource(@PathVariable Map<String, String> pathVars, @Valid @RequestBody R request) throws ResourceNotFoundException {
+    public D updateResource(@PathVariable Map<String, String> pathVars, @Validated(ValidationGroups.All.class) @RequestBody R request) throws ResourceNotFoundException {
         PI parentId = resolveParentId(pathVars);
         I id = resolveChildId(pathVars);
 

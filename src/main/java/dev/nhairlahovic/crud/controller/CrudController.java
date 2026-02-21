@@ -8,13 +8,14 @@ import dev.nhairlahovic.crud.mapper.ResourceMapper;
 import dev.nhairlahovic.crud.model.BaseEntity;
 import dev.nhairlahovic.crud.model.PageDto;
 import dev.nhairlahovic.crud.service.CrudService;
-import jakarta.validation.Valid;
+import dev.nhairlahovic.crud.validator.ValidationGroups;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -64,14 +65,15 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
     }
 
     @PostMapping
-    public D createResource(@Valid @RequestBody R request) {
+    public D createResource(@Validated(ValidationGroups.All.class) @RequestBody R request) {
         E resource = mapper.mapToEntity(request);
         E savedResource = crudService.create(resource);
         return mapper.mapToDto(savedResource);
     }
 
     @PutMapping("/{id}")
-    public D updateResource(@PathVariable("id") I id, @Valid @RequestBody R request) throws ResourceNotFoundException {
+    public D updateResource(@PathVariable("id") I id,
+                            @Validated(ValidationGroups.All.class) @RequestBody R request) throws ResourceNotFoundException {
         E resource = mapper.updateEntity(id, request);
         E updatedResource = crudService.update(id, resource);
         return mapper.mapToDto(updatedResource);
@@ -84,7 +86,8 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
     }
 
     @PatchMapping("/{id}")
-    public D patchResource(@PathVariable("id") I id, @RequestBody JsonNode request) throws ResourceNotFoundException {
+    public D patchResource(@PathVariable("id") I id,
+                           @RequestBody JsonNode request) throws ResourceNotFoundException {
         Set<String> patchableFields = getPatchableFields();
         if (patchableFields.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method PATCH is not supported for this resource.");

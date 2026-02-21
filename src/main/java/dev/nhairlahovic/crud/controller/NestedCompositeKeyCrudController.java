@@ -3,9 +3,10 @@ package dev.nhairlahovic.crud.controller;
 import dev.nhairlahovic.crud.mapper.CompositeKeyResourceMapper;
 import dev.nhairlahovic.crud.model.BaseCompositeKeyEntity;
 import dev.nhairlahovic.crud.service.NestedCrudService;
-import jakarta.validation.Valid;
+import dev.nhairlahovic.crud.validator.ValidationGroups;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,14 +49,14 @@ public abstract class NestedCompositeKeyCrudController<P, E extends BaseComposit
     }
 
     @PostMapping
-    public D createResource(@PathVariable PI parentId, @Valid @RequestBody R request) {
+    public D createResource(@PathVariable PI parentId, @Validated(ValidationGroups.All.class) @RequestBody R request) {
         E entity = mapper.mapToEntity(parentId, request);
         E savedEntity = nestedCrudService.create(entity);
         return mapper.mapToDto(savedEntity);
     }
 
     @PutMapping("/{id}")
-    public D updateResource(@PathVariable PI parentId, @PathVariable C id, @Valid @RequestBody R request) {
+    public D updateResource(@PathVariable PI parentId, @PathVariable C id, @Validated(ValidationGroups.All.class) @RequestBody R request) {
         I compositeId = convertToCompositeId(parentId, id);
         E updatedEntity = mapper.updateEntity(parentId, request);
         E savedEntity = nestedCrudService.update(compositeId, updatedEntity);
