@@ -68,6 +68,7 @@ public abstract class CrudService<T, ID> {
             throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
+        beforeCreate(resource);
         return repository.save(resource);
     }
 
@@ -95,6 +96,16 @@ public abstract class CrudService<T, ID> {
 
         beforeDelete(entity);
         repository.delete(entity);
+    }
+
+    /**
+     * Called before creating the given entity.
+     * Subclasses can override to set default values or enforce business rules.
+     *
+     * @param entity the entity to be created
+     */
+    protected void beforeCreate(T entity) {
+        // default no-op
     }
 
     /**
