@@ -23,7 +23,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -88,7 +89,7 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
     @PatchMapping("/{id}")
     public D patchResource(@PathVariable("id") I id,
                            @RequestBody JsonNode request) throws ResourceNotFoundException {
-        Set<String> patchableFields = getPatchableFields();
+        var patchableFields = getPatchableFields();
         if (patchableFields.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method PATCH is not supported for this resource.");
         }
@@ -99,13 +100,18 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
         return mapper.mapToDto(savedResource);
     }
 
-    protected Set<String> getPatchableFields() {
+    protected Map<String, String> getPatchableFields() {
         Class<R> requestClass = getRequestClass();
 
         return Arrays.stream(requestClass.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(Patchable.class))
-                .map(Field::getName)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toMap(
+                        Field::getName,
+                        field -> {
+                            var entityField = Objects.requireNonNull(field.getAnnotation(Patchable.class)).entityField();
+                            return entityField.isEmpty() ? field.getName() : entityField;
+                        }
+                ));
     }
 
     @SuppressWarnings("unchecked")

@@ -7,8 +7,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.nhairlahovic.crud.exception.PatchException;
 import dev.nhairlahovic.crud.model.BaseEntity;
 
-import java.lang.reflect.Field;
-import java.util.Set;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Map;
 
 /**
  * This interface defines the operations for mapping between entities and their respective
@@ -55,33 +56,54 @@ public interface ResourceMapper<E extends BaseEntity<I>, R, D, I> {
         return entity;
     }
 
-    default E patchEntity(E resource, JsonNode request, Set<String> patchableFields) {
-        Class<?> clazz = resource.getClass();
+    /**
+     * Applies a partial update to an existing entity using only the fields present in the raw JSON request.
+     * Deserializes the request into an intermediate entity via {@link #mapToEntity}, then copies
+     * only the present patchable fields onto the target entity. Explicit {@code null} values clear the field;
+     * absent fields are left unchanged.
+     *
+     * @param resource        The existing entity to patch.
+     * @param rawRequest      The raw JSON patch request used to determine which fields are present.
+     * @param patchableFields Map of DTO field name to entity field name for fields eligible for patching.
+     * @return The patched entity.
+     */
+    default E patchEntity(E resource, JsonNode rawRequest, Map<String, String> patchableFields) {
+        try {
+            R patchRequest = OBJECT_MAPPER.treeToValue(rawRequest, requestType());
+            E patchSource = mapToEntity(patchRequest);
+            Class<?> clazz = resource.getClass();
 
-        for (String fieldName : patchableFields) {
-            if (!request.has(fieldName)) {
-                continue;
-            }
+            for (Map.Entry<String, String> entry : patchableFields.entrySet()) {
+                var dtoFieldName = entry.getKey();
+                var entityFieldName = entry.getValue();
 
-            try {
-                Field field = clazz.getDeclaredField(fieldName);
-                field.setAccessible(true);
-
-                JsonNode valueNode = request.get(fieldName);
-                if (valueNode.isNull()) {
-                    field.set(resource, null);
+                if (!rawRequest.has(dtoFieldName)) {
                     continue;
                 }
 
-                Object convertedValue = OBJECT_MAPPER.treeToValue(valueNode, field.getType());
-                field.set(resource, convertedValue);
-            } catch (JsonProcessingException ex) {
-                throw new PatchException("Invalid value for field '" + fieldName);
-            } catch (Exception ex) {
-                throw new PatchException("Failed to patch field '" + fieldName);
+                try {
+                    var field = clazz.getDeclaredField(entityFieldName);
+                    field.setAccessible(true);
+                    var patchedValue = rawRequest.get(dtoFieldName).isNull() ? null : field.get(patchSource);
+                    field.set(resource, patchedValue);
+                } catch (Exception ex) {
+                    throw new PatchException("Failed to patch field '" + entityFieldName);
+                }
             }
+        } catch (JsonProcessingException ex) {
+            throw new PatchException("Invalid patch request");
         }
 
         return resource;
+    }
+
+    @SuppressWarnings("unchecked")
+    default Class<R> requestType() {
+        for (Type genericInterface : getClass().getGenericInterfaces()) {
+            if (genericInterface instanceof ParameterizedType pt && pt.getRawType() == ResourceMapper.class) {
+                return (Class<R>) pt.getActualTypeArguments()[1];
+            }
+        }
+        throw new IllegalStateException("Cannot determine request type for " + getClass().getName());
     }
 }
