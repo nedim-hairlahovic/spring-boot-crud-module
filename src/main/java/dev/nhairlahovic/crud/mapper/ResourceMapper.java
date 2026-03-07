@@ -3,6 +3,7 @@ package dev.nhairlahovic.crud.mapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.nhairlahovic.crud.exception.PatchException;
 import dev.nhairlahovic.crud.model.BaseEntity;
 
@@ -22,6 +23,8 @@ import java.util.Set;
  * @param <I> The type of the identifier of the entity.
  */
 public interface ResourceMapper<E extends BaseEntity<I>, R, D, I> {
+
+    ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
     /**
      * Maps an entity to its corresponding DTO.
@@ -70,7 +73,7 @@ public interface ResourceMapper<E extends BaseEntity<I>, R, D, I> {
                     continue;
                 }
 
-                Object convertedValue = new ObjectMapper().treeToValue(valueNode, field.getType());
+                Object convertedValue = OBJECT_MAPPER.treeToValue(valueNode, field.getType());
                 field.set(resource, convertedValue);
             } catch (JsonProcessingException ex) {
                 throw new PatchException("Invalid value for field '" + fieldName);
