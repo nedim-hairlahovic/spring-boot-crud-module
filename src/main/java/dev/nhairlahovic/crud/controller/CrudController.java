@@ -1,6 +1,5 @@
 package dev.nhairlahovic.crud.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.nhairlahovic.crud.annotation.Patchable;
 import dev.nhairlahovic.crud.exception.ConflictingResourceOperationException;
 import dev.nhairlahovic.crud.exception.ResourceNotFoundException;
@@ -18,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
