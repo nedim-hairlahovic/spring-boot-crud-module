@@ -17,6 +17,11 @@ public class FieldValidationException extends RuntimeException {
     }
 
     public static FieldValidationException required(String field) {
-        return new FieldValidationException(field, FieldErrorInfo.of(CommonFieldErrorCode.REQUIRED_NOT_NULL, null));
+        return new FieldValidationException(field,
+                FieldErrorInfo.builder()
+                        .code(CommonFieldErrorCode.REQUIRED_NOT_NULL)
+                        .message(CommonFieldErrorCode.REQUIRED_NOT_NULL.getDefaultMessage())
+                        .build()
+        );
     }
 }

@@ -43,8 +43,7 @@ public class ErrorInfo {
                 CommonErrorCode.RESOURCE_CONFLICT.name(),
                 "Operation cannot be completed due to a conflict.",
                 null,
-                Map.of(fieldName, FieldErrorInfo.of(code, rejectedValue))
+                Map.of(fieldName, FieldErrorInfo.builder().code(code).message(code.getDefaultMessage()).rejectedValue(rejectedValue).build())
         );
     }
 }
-
