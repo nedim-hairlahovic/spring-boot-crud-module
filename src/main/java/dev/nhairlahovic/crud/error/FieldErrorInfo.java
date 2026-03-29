@@ -2,11 +2,13 @@ package dev.nhairlahovic.crud.error;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.Map;
 
 @Getter
+@Builder
 @AllArgsConstructor
 public class FieldErrorInfo {
     private String code;
@@ -21,10 +23,6 @@ public class FieldErrorInfo {
 
     public static FieldErrorInfo of(CommonFieldErrorCode code, Object rejectedValue) {
         return new FieldErrorInfo(code.name(), code.getDefaultMessage(), rejectedValue, null);
-    }
-
-    public static FieldErrorInfo of(String errorCode, String message) {
-        return new FieldErrorInfo(errorCode, message, null, null);
     }
 
     public static <E extends Enum<E>> FieldErrorInfo of(E enumValue, String message, Object rejectedValue, Map<String, Object> params) {
