@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
@@ -40,12 +41,15 @@ public abstract class CrudService<T, ID> {
     }
 
     public List<T> getAll(String filterValue) {
+        var sort = getFilterCriteria()
+                .map(criteria -> Sort.by(criteria.getFilterFields().getKeys().getFirst()).ascending())
+                .orElse(Sort.unsorted());
         if (filterValue == null || getFilterCriteria().isEmpty()) {
-            return repository.findAll();
+            return repository.findAll(sort);
         }
 
         Specification<T> filterSpec = new FilterSpecification<>(getFilterCriteria().get(), filterValue);
-        return repository.findAll(filterSpec);
+        return repository.findAll(filterSpec, sort);
     }
 
     public Page<T> getByPage(Pageable pageable, String filterValue) {
