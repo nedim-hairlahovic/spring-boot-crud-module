@@ -77,16 +77,15 @@ public abstract class CrudService<T, ID> {
     }
 
     public T update(ID id, T resource) throws ResourceNotFoundException {
-        if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException(getResourceType(), id.toString());
-        }
+        var existingResource = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(getResourceType(), id.toString()));
 
         OperationCheck operation = isEditable(resource);
         if (!operation.isAllowed()) {
             throw new ConflictingResourceOperationException(operation.getMessage(), operation.getError());
         }
 
-        beforeUpdate(resource);
+        beforeUpdate(resource, existingResource);
         return repository.save(resource);
     }
 
@@ -117,9 +116,10 @@ public abstract class CrudService<T, ID> {
      * Called before updating the given entity.
      * Subclasses can override to set default values or enforce business rules.
      *
-     * @param entity the entity to be created
+     * @param entityToUpdate  the incoming entity with new values to be persisted
+     * @param existingEntity  the currently persisted entity, useful for preserving fields that should not be overwritten
      */
-    protected void beforeUpdate(T entity) {
+    protected void beforeUpdate(T entityToUpdate, T existingEntity) {
         // default no-op
     }
 
