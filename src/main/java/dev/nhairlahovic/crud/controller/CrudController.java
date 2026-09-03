@@ -61,7 +61,7 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
 
     @GetMapping("/{id}")
     public D getResourceById(@PathVariable("id") I id) throws ResourceNotFoundException {
-        E resource = crudService.getById(id);
+        E resource = crudService.getListedById(id);
         return mapper.mapToDto(resource);
     }
 
@@ -94,7 +94,7 @@ public abstract class CrudController<E extends BaseEntity<I>, R, D, I> {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method PATCH is not supported for this resource.");
         }
 
-        E resource = crudService.getById(id);
+        E resource = crudService.getListedById(id);
         E patchedResource = mapper.patchEntity(resource, request, patchableFields);
         E savedResource = crudService.update(id, patchedResource);
         return mapper.mapToDto(savedResource);

@@ -44,26 +44,58 @@ public abstract class CrudService<T, ID> {
         var sort = getFilterCriteria()
                 .map(criteria -> Sort.by(criteria.getFilterFields().getKeys().getFirst()).ascending())
                 .orElse(Sort.unsorted());
-        if (filterValue == null || getFilterCriteria().isEmpty()) {
-            return repository.findAll(sort);
-        }
 
-        Specification<T> filterSpec = new FilterSpecification<>(getFilterCriteria().get(), filterValue);
-        return repository.findAll(filterSpec, sort);
+        return repository.findAll(listSpecification(filterValue), sort);
     }
 
     public Page<T> getByPage(Pageable pageable, String filterValue) {
-        if (filterValue == null || getFilterCriteria().isEmpty()) {
-            return repository.findAll(pageable);
+        return repository.findAll(listSpecification(filterValue), pageable);
+    }
+
+    private Specification<T> listSpecification(String filterValue) {
+        var filterCriteria = getFilterCriteria();
+        if (filterValue == null || filterCriteria.isEmpty()) {
+            return baseSpecification();
         }
 
-        Specification<T> filterSpec = new FilterSpecification<>(getFilterCriteria().get(), filterValue);
-        return repository.findAll(filterSpec, pageable);
+        return baseSpecification().and(new FilterSpecification<>(filterCriteria.get(), filterValue));
+    }
+
+    /**
+     * Restriction applied to every list query for this resource, on top of the free-text search
+     * filter. Subclasses can override it to hide rows that should never show up in a listing.
+     *
+     * @return the restriction to apply, unrestricted by default
+     */
+    protected Specification<T> baseSpecification() {
+        return Specification.unrestricted();
     }
 
     public T getById(ID id) throws ResourceNotFoundException {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(getResourceType(), id.toString()));
+    }
+
+    /**
+     * Looks a resource up by id honouring {@link #baseSpecification()}, so rows hidden from the
+     * listings are treated as non-existing. Used by the CRUD endpoints; callers that have to reach
+     * hidden rows regardless should use {@link #getById(Object)} instead.
+     *
+     * @param id the id of the resource to look up
+     * @return the matching resource
+     * @throws ResourceNotFoundException if no resource with that id passes the base specification
+     */
+    public T getListedById(ID id) throws ResourceNotFoundException {
+        return repository.findOne(baseSpecification().and(byIdSpecification(id)))
+                .orElseThrow(() -> new ResourceNotFoundException(getResourceType(), id.toString()));
+    }
+
+    private Specification<T> byIdSpecification(ID id) {
+        return (root, query, builder) -> {
+            var entityType = root.getModel();
+            var idAttribute = entityType.getId(entityType.getIdType().getJavaType());
+            return builder.equal(root.get(idAttribute.getName()), id);
+        };
     }
 
     public T create(T resource) {
@@ -77,8 +109,7 @@ public abstract class CrudService<T, ID> {
     }
 
     public T update(ID id, T resource) throws ResourceNotFoundException {
-        var existingResource = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(getResourceType(), id.toString()));
+        var existingResource = getListedById(id);
 
         OperationCheck operation = isEditable(resource);
         if (!operation.isAllowed()) {
@@ -91,7 +122,7 @@ public abstract class CrudService<T, ID> {
 
     @Transactional
     public void delete(ID id) throws ConflictingResourceOperationException {
-        T entity = this.getById(id);
+        T entity = this.getListedById(id);
 
         OperationCheck operation = isDeletable(entity);
         if (!operation.isAllowed()) {
